@@ -1,1 +1,1 @@
-High performance local lru memory cache based on golang
+High performance local memory cache based on golang

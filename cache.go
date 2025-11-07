@@ -1,4 +1,4 @@
-//Package cache Cache with data expiration is based on fastcache
+// Package cache Cache with data expiration is based on fastcache
 package cache
 
 import (
@@ -35,7 +35,7 @@ func (c *Cache) Init() {
 			c.cacheInst = fastcache.New(int(allocSize))
 		}
 		// params init
-		c.now = time.Now().UnixNano() / 1e6  // millisecond
+		c.now = time.Now().UnixNano() / 1e6 // millisecond
 		c.NowRefreshCycle = ASYNC_REFRESH_NOW_DEFAULT_TIME
 		c.asyncNow() // start now's refresh thread
 	}
@@ -51,7 +51,7 @@ func (c *Cache) Get(key string) []byte {
 	if !exist {
 		return nil
 	}
-	// 前几个字节为expire过期时间
+	// header: expire time, 8 bytes
 	headerSize := unsafe.Sizeof(c.Expire)
 	if int(headerSize) > cap(data) { // 越界
 		return nil
@@ -85,7 +85,7 @@ func (c *Cache) asyncNow() {
 			if c.NowRefreshCycle <= 0 { // invalid value, so use default
 				c.NowRefreshCycle = ASYNC_REFRESH_NOW_DEFAULT_TIME
 			}
-			c.now = time.Now().UnixNano() / 1e6 // 在用户空间完成未发生系统调用, 因使用vDSO技术
+			c.now = time.Now().UnixNano() / 1e6 // this call is in user space without system call occurred, because of vDSO technology
 			time.Sleep(time.Duration(c.NowRefreshCycle) * time.Millisecond)
 		}
 	}()

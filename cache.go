@@ -1,4 +1,4 @@
-// Package cache High Performance Cache with data expiration based on fast_cache
+// Package cache High Performance Cache with expiration based on fast_cache
 package cache
 
 import (

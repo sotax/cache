@@ -9,8 +9,10 @@ import (
 	"unsafe"
 )
 
-const CACHE_DEFAULT_SIZE int32 = 10 * (1 << 20)
-const ASYNC_REFRESH_NOW_DEFAULT_TIME int64 = 2000 // Asynchronously refresh the current time(now), unit: millisecond
+const (
+	CACHE_DEFAULT_SIZE             int32 = 10 * (1 << 20) // default cache size, unit: byte
+	ASYNC_REFRESH_NOW_DEFAULT_TIME int64 = 2000           // Asynchronously refresh the current time(now), unit: millisecond
+)
 
 // object defination
 type Cache struct {
@@ -18,7 +20,7 @@ type Cache struct {
 	Size   int32 // cache space size, unit: byte.
 	// The cycle of asynchronously refresh the current time(now), unit: millisecond.
 	// The larger the value, the worse the data expiration accuracy.
-	NowRefreshCycle int64
+	NowRefreshCycle int64 // Asynchronously refresh the current time(now),unit: millisecond
 	now             int64 // The current time's cache, unit: ms
 	cacheOnce       sync.Once
 	cacheInst       *fastcache.Cache // storage object
@@ -46,6 +48,10 @@ func (c *Cache) Init() {
 }
 
 func (c *Cache) Get(key string) []byte {
+	// check
+	if c == nil || c.cacheInst == nil {
+		return nil
+	}
 	// query
 	data, exist := c.cacheInst.HasGet(nil, []byte(key))
 	if !exist {
@@ -69,12 +75,20 @@ func (c *Cache) Get(key string) []byte {
 }
 
 func (c *Cache) Set(key string, value []byte) {
+	// check
+	if c == nil || c.cacheInst == nil {
+		return
+	}
 	// storage format: header(expiration time, 8 bytes) + data
 	c.cacheInst.Set([]byte(key), append(base.Int64ToBytes(c.now+c.Expire), value...))
 }
 
 // clear all data
 func (c *Cache) Clear() {
+	// check
+	if c == nil || c.cacheInst == nil {
+		return
+	}
 	c.cacheInst.Reset()
 }
 
@@ -82,6 +96,13 @@ func (c *Cache) Clear() {
 func (c *Cache) asyncNow() {
 	go func() {
 		for {
+			// safe check
+			if c == nil {
+				time.Sleep(100 * time.Millisecond)
+				continue
+			}
+
+			// refresh
 			if c.NowRefreshCycle <= 0 { // invalid value, so use default
 				c.NowRefreshCycle = ASYNC_REFRESH_NOW_DEFAULT_TIME
 			}
